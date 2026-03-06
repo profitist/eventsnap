@@ -1,0 +1,37 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install linters
+        run: pip install ruff
+
+      - name: Run ruff checks
+        run: |
+          echo "🔍 Проверка качества кода с ruff..."
+          ruff check .
+
+      - name: Check formatting with ruff
+        run: |
+          echo "Проверка форматирования..."
+          ruff format . --check || echo "Форматирование не соответствует стандарту. Запустите 'ruff format .' локально"
