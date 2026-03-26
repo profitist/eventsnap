@@ -6,17 +6,17 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from datetime import datetime
 from .base import Base
+from .user import User
 
 
 class EventStatus(str, enum.Enum):
-    ACTIVE = 'active'
-    ARCHIVED = 'archived'
-    DRAFT = 'draft'
-
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    DRAFT = "draft"
 
 
 class Event(Base):
-    __tablename__ = 'events'
+    __tablename__ = "events"
 
     id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
 
@@ -36,10 +36,8 @@ class Event(Base):
 
     deleted_at: Mapped[datetime] = mapped_column(DATETIME, nullable=True)
 
-    status: Mapped[EventStatus] = mapped_column(String(20), nullable=False, default=EventStatus.DRAFT)
+    status: Mapped[EventStatus] = mapped_column(
+        String(20), nullable=False, default=EventStatus.DRAFT
+    )
 
-    creator: Mapped['User'] = relationship('User', back_populates='events_with_creator')
-
-
-
-
+    creator: Mapped["User"] = relationship("User", back_populates="events_with_creator")

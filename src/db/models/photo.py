@@ -3,31 +3,34 @@ import datetime
 import enum
 
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import String, Integer, BigInteger, Enum, ForeignKey
+from sqlalchemy import String, BigInteger, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from .base import Base
+from .user import User
+from .event import Event
 
 
 class PhotoStatus(enum.Enum):
-    UPLOADING = 'uploading'
-    ACTIVE    = 'active' 
-    DELETED   = 'deleted'
-    REJECTED  = 'rejected' # можно замутить ИИ модерацию
+    UPLOADING = "uploading"
+    ACTIVE = "active"
+    DELETED = "deleted"
+    REJECTED = "rejected"  # можно замутить ИИ модерацию
 
 
 class Photo(Base):
-    __tablename__ = 'photos'
+    __tablename__ = "photos"
 
     id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     event_id: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey('events.id'), nullable=False
+        PG_UUID(as_uuid=True), ForeignKey("events.id"), nullable=False
     )
     author_id: Mapped[uuid.UUID | None] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey('users.id'),
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id"),
     )
 
     url: Mapped[str] = mapped_column(String(1000), nullable=False)
@@ -45,8 +48,6 @@ class Photo(Base):
 
     deleted_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
 
-    event: Mapped['Event'] = relationship('Event', back_populates='photos')
+    event: Mapped["Event"] = relationship("Event", back_populates="photos")
 
-    author: Mapped['User'] = relationship('User', back_populates='photos')
-
-
+    author: Mapped["User"] = relationship("User", back_populates="photos")
