@@ -2,7 +2,9 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
+
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, func
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -33,7 +35,7 @@ class Gallery(Base):
     moderation_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true"
     )
-
+      
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
