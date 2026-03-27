@@ -12,3 +12,7 @@ SQLAlchemy==2.0.48
 starlette==0.52.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+# Database driver
+asyncpg==0.30.0
+# Migrations
+alembic==1.15.2
