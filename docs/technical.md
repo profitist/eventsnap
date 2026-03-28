@@ -32,6 +32,17 @@ src/
 │   ├── event_repository.py
 │   ├── gallery_repository.py
 │   └── photo_repository.py
+├── auth/                    # аутентификация
+│   ├── router.py            # POST /auth/register, /login, /refresh, GET /me
+│   ├── schemas.py           # Pydantic v2 request/response схемы
+│   ├── service.py           # бизнес-логика: register, login, refresh
+│   ├── passwords.py         # bcrypt hash/verify
+│   ├── jwt.py               # JWT encode/decode, пара access + refresh
+│   └── dependencies.py      # get_current_user (FastAPI Depends)
+├── events/                  # события
+│   ├── router.py            # CRUD /events
+│   ├── schemas.py           # EventCreate/Update/Response
+│   └── service.py           # EventService: create, list, update, soft_delete
 └── s3/                      # клиент для работы с файловым хранилищем
     ├── __init__.py          # реэкспорт публичного API модуля
     ├── client.py            # S3Client, S3Error, get_s3_client (FastAPI Depends)
@@ -130,6 +141,65 @@ Thumbnail (~400px) генерируется фоновым воркером по
 Два способа (оба поддерживаются одновременно):
 - Email + password (bcrypt)
 - OAuth 2.0: Google, Apple
+
+### Эндпоинты
+
+| Метод | Путь | Описание | Auth |
+|---|---|---|---|
+| POST | `/auth/register` | Регистрация (email + пароль) | - |
+| POST | `/auth/login` | Вход | - |
+| POST | `/auth/refresh` | Обновление токенов | - |
+| GET | `/auth/me` | Текущий пользователь | Bearer |
+
+### JWT-токены
+
+- **Access token** — `HS256`, TTL по умолчанию 30 минут
+- **Refresh token** — `HS256`, TTL по умолчанию 7 дней
+- Оба подписаны `SECRET_KEY`
+- Payload: `{"sub": "<user_id>", "type": "access|refresh", "iat": ..., "exp": ...}`
+
+### Переменные окружения
+
+| Переменная | Описание | По умолчанию |
+|---|---|---|
+| `SECRET_KEY` | Ключ подписи JWT | обязательно |
+| `JWT_ALGORITHM` | Алгоритм | `HS256` |
+| `ACCESS_TOKEN_TTL_MINUTES` | TTL access token (мин) | `30` |
+| `REFRESH_TOKEN_TTL_DAYS` | TTL refresh token (дни) | `7` |
+
+### Защита роутов
+
+```python
+from src.auth.dependencies import get_current_user
+
+@router.get("/protected")
+async def protected(user: User = Depends(get_current_user)):
+    ...
+```
+
+### Заметки
+- Email нормализуется в lowercase перед сохранением и поиском
+- Login защищён от timing attacks: bcrypt выполняется даже при отсутствии пользователя
+- Token blacklist / revocation отсутствует — для MVP достаточно TTL
+
+## События (Events CRUD)
+
+### Эндпоинты
+
+| Метод | Путь | Описание | Auth |
+|---|---|---|---|
+| POST | `/events` | Создать событие | Bearer |
+| GET | `/events` | Список событий пользователя | Bearer |
+| GET | `/events/{id}` | Получить событие | Bearer |
+| PATCH | `/events/{id}` | Обновить событие (организатор) | Bearer |
+| DELETE | `/events/{id}` | Soft delete (организатор) | Bearer |
+
+### Бизнес-логика
+
+- Создание события автоматически создаёт Gallery (1:1) и добавляет создателя как `EventParticipant(role="organizer")`
+- `GET /events?role=organizer|participant|all` — фильтрация по связи пользователя с событием
+- Update/delete доступны только организатору (`event.organizer_id == user.id`), иначе 403
+- Координаты и даты валидируются на уровне Pydantic (оба или ничего, `ends_at > starts_at`)
 
 ## Важные замечания
 

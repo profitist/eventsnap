@@ -23,6 +23,11 @@ class Config(BaseSettings):
     # Lifetime of presigned download URLs in seconds (default: 1 hour)
     S3_PRESIGN_DOWNLOAD_TTL: int = 3600
 
+    # JWT
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_TTL_MINUTES: int = 30
+    REFRESH_TOKEN_TTL_DAYS: int = 7
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     def get_database_url(self) -> str:

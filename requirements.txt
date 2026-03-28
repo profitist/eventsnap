@@ -18,3 +18,7 @@ asyncpg==0.30.0
 alembic==1.15.2
 # Async S3 / object storage client
 aioboto3==13.3.0
+# Auth
+bcrypt==4.3.0
+PyJWT==2.10.1
+email-validator==2.2.0
