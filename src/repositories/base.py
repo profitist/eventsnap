@@ -63,6 +63,8 @@ class BaseRepository(Generic[ModelT]):
         """
         stmt = select(self.model)
         for field, value in kwargs.items():
+            if not hasattr(self.model, field):
+                raise ValueError(f"{self.model.__name__} has no column {field!r}")
             stmt = stmt.where(getattr(self.model, field) == value)
         result = await self._session.execute(stmt)
         return result.scalars().all()
@@ -76,6 +78,8 @@ class BaseRepository(Generic[ModelT]):
         """
         stmt = select(self.model)
         for field, value in kwargs.items():
+            if not hasattr(self.model, field):
+                raise ValueError(f"{self.model.__name__} has no column {field!r}")
             stmt = stmt.where(getattr(self.model, field) == value)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
