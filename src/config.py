@@ -1,16 +1,32 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Config:
-    DB_USER: str = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "postgres")
-    DB_HOST: str = os.getenv("DB_HOST", "localhost")
-    DB_NAME: str = os.getenv("DB_NAME", "eventsnap")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "defaultsecret")
+class Config(BaseSettings):
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
+    DB_HOST: str = "localhost"
+    DB_NAME: str = "eventsnap"
+    SECRET_KEY: str
 
-    @classmethod
-    def get_database_url(cls):
-        return f"postgresql+asyncpg://{cls.DB_USER}:{cls.DB_PASSWORD}@{cls.DB_HOST}/{cls.DB_NAME}"
+    # S3 / object storage configuration
+    # Any S3-compatible provider works (AWS, MinIO, Yandex Cloud, etc.)
+    S3_BUCKET_NAME: str = "eventsnap"
+    S3_REGION: str = "us-east-1"
+    S3_ENDPOINT_URL: str | None = None  # None = use AWS default
+    S3_ACCESS_KEY_ID: str
+    S3_SECRET_ACCESS_KEY: str
+    # Base URL for building public object URLs returned to clients.
+    # Example: "https://cdn.eventsnap.app" or "https://<bucket>.s3.<region>.amazonaws.com"
+    S3_BASE_URL: str
+    # Lifetime of presigned upload URLs in seconds (default: 15 minutes)
+    S3_PRESIGN_UPLOAD_TTL: int = 900
+    # Lifetime of presigned download URLs in seconds (default: 1 hour)
+    S3_PRESIGN_DOWNLOAD_TTL: int = 3600
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    def get_database_url(self) -> str:
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}/{self.DB_NAME}"
+
+
+config = Config()

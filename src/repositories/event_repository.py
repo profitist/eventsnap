@@ -54,15 +54,10 @@ class EventRepository(BaseRepository[Event]):
         Return all events owned by the given organizer.
         Newest first by default (created_at DESC).
         """
-        stmt = (
-            select(Event)
-            .where(Event.organizer_id == organizer_id)
-            .order_by(Event.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
+        stmt = select(Event).where(Event.organizer_id == organizer_id)
         if not include_deleted:
             stmt = stmt.where(Event.deleted_at.is_(None))
+        stmt = stmt.order_by(Event.created_at.desc()).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
