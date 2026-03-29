@@ -1,5 +1,9 @@
 # EventSnap — Техническая часть
 
+Смежные документы:
+- API-контракт: `docs/api.md`
+- Frontend user flows: `docs/frontend-flows.md`
+
 ## Стек
 
 | Слой | Технология |
@@ -126,7 +130,7 @@ UUID-ы хранятся в ключах без дефисов (hex), расши
 
 ### Рекомендуемый флоу загрузки фото
 
-1. Клиент запрашивает presigned upload URL у API (`POST /photos/upload-url`).
+1. Клиент запрашивает presigned upload URL у API (`POST /events/{event_id}/photos/upload-url`).
 2. API генерирует S3-ключ через `keys.photo_original_key(...)` и вызывает
    `S3Client.generate_presigned_upload_url(key, content_type)`.
 3. API сохраняет `Photo` в БД со статусом `pending` и возвращает URL клиенту.
@@ -141,6 +145,8 @@ Thumbnail (~400px) генерируется фоновым воркером по
 Два способа (оба поддерживаются одновременно):
 - Email + password (bcrypt)
 - OAuth 2.0: Google, Apple
+
+Полный и актуальный список API-эндпоинтов см. в `docs/api.md`.
 
 ### Эндпоинты
 
@@ -183,6 +189,8 @@ async def protected(user: User = Depends(get_current_user)):
 - Token blacklist / revocation отсутствует — для MVP достаточно TTL
 
 ## События (Events CRUD)
+
+Полный и актуальный список API-эндпоинтов см. в `docs/api.md`.
 
 ### Эндпоинты
 

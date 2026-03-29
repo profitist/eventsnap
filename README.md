@@ -79,7 +79,7 @@ src/
 
 ## Флоу загрузки фото
 
-1. Клиент запрашивает presigned URL: `POST /photos/upload-url`
+1. Клиент запрашивает presigned URL: `POST /events/{event_id}/photos/upload-url`
 2. API возвращает URL и сохраняет запись `Photo` со статусом `pending`
 3. Клиент загружает файл **напрямую на S3** (через API-сервер не проходит)
 4. Фоновый воркер генерирует thumbnail и обновляет запись
@@ -88,3 +88,5 @@ src/
 
 - [`docs/mvp.md`](docs/mvp.md) — функциональные требования MVP (дедлайн: 7 апреля 2026)
 - [`docs/technical.md`](docs/technical.md) — архитектура, модели БД, детали реализации
+- [`docs/api.md`](docs/api.md) — API-контракт эндпоинтов (статус: реализован/запланирован)
+- [`docs/frontend-flows.md`](docs/frontend-flows.md) — пользовательские сценарии и последовательности API-вызовов для фронтенда
