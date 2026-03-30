@@ -158,6 +158,7 @@ class EventParticipantRepository(BaseRepository[EventParticipant]):
         """
         stmt = (
             select(EventParticipant)
+            .options(selectinload(EventParticipant.user))
             .where(EventParticipant.event_id == event_id)
             .order_by(EventParticipant.joined_at.asc())
             .limit(limit)

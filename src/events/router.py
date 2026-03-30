@@ -7,9 +7,16 @@ from src.auth.dependencies import get_current_user
 from src.db.db_depends import get_async_session
 from src.events.schemas import (
     EventCreateRequest,
+    EventJoinLinkResponse,
+    EventJoinRequest,
+    EventJoinResponse,
     EventListResponse,
+    EventParticipantListResponse,
+    EventParticipantResponse,
     EventResponse,
     EventUpdateRequest,
+    GalleryResponse,
+    GalleryUpdateRequest,
 )
 from src.events.service import EventService
 from src.models.user import User
@@ -46,6 +53,20 @@ async def list_events(
     )
 
 
+@router.post("/join", response_model=EventJoinResponse)
+async def join_event_by_qr(
+    body: EventJoinRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> EventJoinResponse:
+    service = EventService(session)
+    event, already_joined = await service.join_by_qr_token(body.qr_token, user.id)
+    return EventJoinResponse(
+        event=EventResponse.model_validate(event),
+        already_joined=already_joined,
+    )
+
+
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(
     event_id: UUID,
@@ -53,7 +74,7 @@ async def get_event(
     session: AsyncSession = Depends(get_async_session),
 ) -> EventResponse:
     service = EventService(session)
-    event = await service.get_or_404(event_id)
+    event = await service.get_for_member_or_403(event_id, user.id)
     return EventResponse.model_validate(event)
 
 
@@ -77,3 +98,73 @@ async def delete_event(
 ) -> None:
     service = EventService(session)
     await service.soft_delete(event_id, user.id)
+
+
+@router.get("/{event_id}/join-link", response_model=EventJoinLinkResponse)
+async def get_event_join_link(
+    event_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> EventJoinLinkResponse:
+    service = EventService(session)
+    event = await service.get_join_link(event_id, user.id)
+    return EventJoinLinkResponse(
+        event_id=event.id,
+        qr_token=event.qr_token,
+        join_path=f"/join?qr_token={event.qr_token}",
+    )
+
+
+@router.get("/{event_id}/participants", response_model=EventParticipantListResponse)
+async def list_event_participants(
+    event_id: UUID,
+    limit: int = Query(100, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> EventParticipantListResponse:
+    service = EventService(session)
+    participants, total = await service.list_participants(
+        event_id,
+        user.id,
+        limit=limit,
+        offset=offset,
+    )
+    items = [
+        EventParticipantResponse(
+            user_id=p.user_id,
+            display_name=p.user.display_name if p.user else "Unknown user",
+            avatar_s3_key=p.user.avatar_s3_key if p.user else None,
+            role=p.role,
+            joined_at=p.joined_at,
+        )
+        for p in participants
+    ]
+    return EventParticipantListResponse(items=items, total=total)
+
+
+@router.get("/{event_id}/gallery", response_model=GalleryResponse)
+async def get_gallery(
+    event_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> GalleryResponse:
+    service = EventService(session)
+    gallery = await service.get_gallery_for_member(event_id, user.id)
+    return GalleryResponse.model_validate(gallery)
+
+
+@router.patch("/{event_id}/gallery", response_model=GalleryResponse)
+async def update_gallery(
+    event_id: UUID,
+    body: GalleryUpdateRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> GalleryResponse:
+    service = EventService(session)
+    gallery = await service.update_gallery(
+        event_id,
+        user.id,
+        moderation_enabled=body.moderation_enabled,
+    )
+    return GalleryResponse.model_validate(gallery)
