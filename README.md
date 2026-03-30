@@ -72,6 +72,10 @@ src/
 │   ├── event_repository.py
 │   ├── gallery_repository.py
 │   └── photo_repository.py
+├── photos/                  # загрузка фото, лента, модерация
+│   ├── router.py            # /events/{id}/photos..., /photos/{id}/approve|reject
+│   ├── schemas.py           # Photo request/response DTO
+│   └── service.py           # бизнес-логика фото и модерации
 └── s3/                      # клиент для объектного хранилища
     ├── client.py            # S3Client, get_s3_client (FastAPI Depends)
     └── keys.py              # построители S3-ключей

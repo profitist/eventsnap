@@ -76,3 +76,47 @@ class EventResponse(BaseModel):
 class EventListResponse(BaseModel):
     items: list[EventResponse]
     total: int
+
+
+class EventJoinLinkResponse(BaseModel):
+    event_id: UUID
+    qr_token: str
+    join_path: str
+
+
+class EventJoinRequest(BaseModel):
+    qr_token: str = Field(min_length=8, max_length=128)
+
+
+class EventJoinResponse(BaseModel):
+    event: EventResponse
+    already_joined: bool
+
+
+class EventParticipantResponse(BaseModel):
+    user_id: UUID
+    display_name: str
+    avatar_s3_key: str | None = None
+    role: str
+    joined_at: datetime
+
+
+class EventParticipantListResponse(BaseModel):
+    items: list[EventParticipantResponse]
+    total: int
+
+
+class GalleryResponse(BaseModel):
+    id: UUID
+    event_id: UUID
+    title: str | None
+    description: str | None
+    moderation_enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GalleryUpdateRequest(BaseModel):
+    moderation_enabled: bool | None = None

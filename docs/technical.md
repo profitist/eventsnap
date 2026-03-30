@@ -44,9 +44,13 @@ src/
 │   ├── jwt.py               # JWT encode/decode, пара access + refresh
 │   └── dependencies.py      # get_current_user (FastAPI Depends)
 ├── events/                  # события
-│   ├── router.py            # CRUD /events
-│   ├── schemas.py           # EventCreate/Update/Response
-│   └── service.py           # EventService: create, list, update, soft_delete
+│   ├── router.py            # /events CRUD + /events/join + participants + gallery
+│   ├── schemas.py           # Event/Gallery/Participants request/response схемы
+│   └── service.py           # EventService: CRUD, QR-join, participants, gallery
+├── photos/                  # фото и модерация
+│   ├── router.py            # /events/{id}/photos..., /photos/{id}/approve|reject
+│   ├── schemas.py           # Photo request/response схемы
+│   └── service.py           # PhotoService: upload-url, feed, delete, moderation
 └── s3/                      # клиент для работы с файловым хранилищем
     ├── __init__.py          # реэкспорт публичного API модуля
     ├── client.py            # S3Client, S3Error, get_s3_client (FastAPI Depends)
@@ -133,7 +137,10 @@ UUID-ы хранятся в ключах без дефисов (hex), расши
 1. Клиент запрашивает presigned upload URL у API (`POST /events/{event_id}/photos/upload-url`).
 2. API генерирует S3-ключ через `keys.photo_original_key(...)` и вызывает
    `S3Client.generate_presigned_upload_url(key, content_type)`.
-3. API сохраняет `Photo` в БД со статусом `pending` и возвращает URL клиенту.
+3. API сохраняет `Photo` в БД:
+   - `pending`, если `gallery.moderation_enabled=true`
+   - `approved`, если `gallery.moderation_enabled=false`
+   и возвращает URL клиенту.
 4. Клиент делает `PUT` напрямую на S3 (данные не проходят через API-сервер).
 5. Фоновый воркер генерирует thumbnail и обновляет `Photo.thumbnail_s3_key`
    через `PhotoRepository.set_thumbnail_key(...)`.
@@ -188,7 +195,7 @@ async def protected(user: User = Depends(get_current_user)):
 - Login защищён от timing attacks: bcrypt выполняется даже при отсутствии пользователя
 - Token blacklist / revocation отсутствует — для MVP достаточно TTL
 
-## События (Events CRUD)
+## События, QR и галерея
 
 Полный и актуальный список API-эндпоинтов см. в `docs/api.md`.
 
@@ -198,16 +205,39 @@ async def protected(user: User = Depends(get_current_user)):
 |---|---|---|---|
 | POST | `/events` | Создать событие | Bearer |
 | GET | `/events` | Список событий пользователя | Bearer |
-| GET | `/events/{id}` | Получить событие | Bearer |
+| POST | `/events/join` | Вступить в событие по QR токену | Bearer |
+| GET | `/events/{id}` | Получить событие (только участник) | Bearer |
 | PATCH | `/events/{id}` | Обновить событие (организатор) | Bearer |
 | DELETE | `/events/{id}` | Soft delete (организатор) | Bearer |
+| GET | `/events/{id}/join-link` | Получить данные для QR-ссылки | Bearer (organizer) |
+| GET | `/events/{id}/participants` | Список участников события | Bearer (participant) |
+| GET | `/events/{id}/gallery` | Получить настройки галереи | Bearer (participant) |
+| PATCH | `/events/{id}/gallery` | Обновить `moderation_enabled` | Bearer (organizer) |
 
 ### Бизнес-логика
 
 - Создание события автоматически создаёт Gallery (1:1) и добавляет создателя как `EventParticipant(role="organizer")`
 - `GET /events?role=organizer|participant|all` — фильтрация по связи пользователя с событием
+- `GET /events/{id}` и `GET /events/{id}/gallery` доступны только участникам события
+- `POST /events/join` идемпотентен: повторный join не создаёт дубликаты
 - Update/delete доступны только организатору (`event.organizer_id == user.id`), иначе 403
 - Координаты и даты валидируются на уровне Pydantic (оба или ничего, `ends_at > starts_at`)
+
+## Фото и модерация
+
+Полный и актуальный список API-эндпоинтов см. в `docs/api.md`.
+
+### Эндпоинты
+
+| Метод | Путь | Описание | Auth |
+|---|---|---|---|
+| POST | `/events/{id}/photos/upload-url` | Создать `Photo`, выдать presigned upload URL | Bearer (participant) |
+| GET | `/events/{id}/photos` | Лента одобренных фото | Bearer (participant) |
+| DELETE | `/photos/{id}` | Soft delete фото (uploader или organizer) | Bearer |
+| GET | `/events/{id}/photos/pending` | Очередь модерации | Bearer (organizer) |
+| GET | `/events/{id}/photos/pending/count` | Счётчик очереди модерации | Bearer (organizer) |
+| POST | `/photos/{id}/approve` | Одобрить фото | Bearer (organizer) |
+| POST | `/photos/{id}/reject` | Отклонить фото с комментарием | Bearer (organizer) |
 
 ## Важные замечания
 

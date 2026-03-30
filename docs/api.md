@@ -41,7 +41,7 @@
 |---|---|---|---|---|
 | POST | `/events` | Bearer | Создать событие | реализован |
 | GET | `/events` | Bearer | Список событий пользователя (`role=organizer|participant|all`) | реализован |
-| GET | `/events/{event_id}` | Bearer | Получить событие по ID | реализован |
+| GET | `/events/{event_id}` | Bearer | Получить событие по ID (только участник/организатор) | реализован |
 | PATCH | `/events/{event_id}` | Bearer | Обновить событие (организатор) | реализован |
 | DELETE | `/events/{event_id}` | Bearer | Soft delete события (организатор) | реализован |
 | POST | `/events/{event_id}/cover/upload-url` | Bearer | Получить presigned URL для обложки события | запланирован |
@@ -51,9 +51,12 @@
 
 | Метод | Путь | Auth | Описание | Статус |
 |---|---|---|---|---|
-| GET | `/events/{event_id}/join-link` | Bearer (организатор) | Получить join URL/данные для генерации QR | запланирован |
-| POST | `/events/join` | Bearer | Вход в событие по `qr_token` (автодобавление участником) | запланирован |
-| GET | `/events/{event_id}/participants` | Bearer | Список участников события | запланирован |
+| GET | `/events/{event_id}/join-link` | Bearer (организатор) | Получить join URL/данные для генерации QR | реализован |
+| POST | `/events/join` | Bearer | Вход в событие по `qr_token` (автодобавление участником) | реализован |
+| GET | `/events/{event_id}/participants` | Bearer | Список участников события | реализован |
+
+`GET /events/{event_id}/join-link` возвращает `qr_token` и `join_path`.
+`POST /events/join` возвращает `{ event, already_joined }`.
 
 ### `POST /events/join`
 
@@ -69,16 +72,16 @@
 
 | Метод | Путь | Auth | Описание | Статус |
 |---|---|---|---|---|
-| GET | `/events/{event_id}/gallery` | Bearer (участник/организатор) | Получить метаданные галереи и настройки | запланирован |
-| PATCH | `/events/{event_id}/gallery` | Bearer (организатор) | Обновить настройки галереи (`moderation_enabled`) | запланирован |
+| GET | `/events/{event_id}/gallery` | Bearer (участник/организатор) | Получить метаданные галереи и настройки | реализован |
+| PATCH | `/events/{event_id}/gallery` | Bearer (организатор) | Обновить настройки галереи (`moderation_enabled`) | реализован |
 
 ## Photos
 
 | Метод | Путь | Auth | Описание | Статус |
 |---|---|---|---|---|
-| POST | `/events/{event_id}/photos/upload-url` | Bearer (участник/организатор) | Создать `Photo`, вернуть presigned URL для прямой загрузки в S3 | запланирован |
-| GET | `/events/{event_id}/photos` | Bearer (участник/организатор) | Лента одобренных фото галереи | запланирован |
-| DELETE | `/photos/{photo_id}` | Bearer | Удалить фото (автор фото или организатор) | запланирован |
+| POST | `/events/{event_id}/photos/upload-url` | Bearer (участник/организатор) | Создать `Photo`, вернуть presigned URL для прямой загрузки в S3 | реализован |
+| GET | `/events/{event_id}/photos` | Bearer (участник/организатор) | Лента одобренных фото галереи | реализован |
+| DELETE | `/photos/{photo_id}` | Bearer | Удалить фото (автор фото или организатор) | реализован |
 
 ### `POST /events/{event_id}/photos/upload-url`
 
@@ -107,10 +110,10 @@
 
 | Метод | Путь | Auth | Описание | Статус |
 |---|---|---|---|---|
-| GET | `/events/{event_id}/photos/pending` | Bearer (организатор) | Очередь фото на модерацию | запланирован |
-| GET | `/events/{event_id}/photos/pending/count` | Bearer (организатор) | Количество фото в очереди | запланирован |
-| POST | `/photos/{photo_id}/approve` | Bearer (организатор) | Одобрить фото | запланирован |
-| POST | `/photos/{photo_id}/reject` | Bearer (организатор) | Отклонить фото с комментарием | запланирован |
+| GET | `/events/{event_id}/photos/pending` | Bearer (организатор) | Очередь фото на модерацию | реализован |
+| GET | `/events/{event_id}/photos/pending/count` | Bearer (организатор) | Количество фото в очереди | реализован |
+| POST | `/photos/{photo_id}/approve` | Bearer (организатор) | Одобрить фото | реализован |
+| POST | `/photos/{photo_id}/reject` | Bearer (организатор) | Отклонить фото с комментарием | реализован |
 
 ### `POST /photos/{photo_id}/reject`
 
