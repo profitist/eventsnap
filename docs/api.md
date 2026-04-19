@@ -23,7 +23,7 @@
 | POST | `/auth/login` | - | Логин по email + password | реализован |
 | POST | `/auth/refresh` | - | Обновление access/refresh токенов | реализован |
 | GET | `/auth/me` | Bearer | Профиль текущего пользователя | реализован |
-| POST | `/auth/oauth/google` | - | Вход/регистрация через Google OAuth | запланирован |
+| POST | `/auth/oauth/google` | - | Вход/регистрация через Google OAuth | отменён |
 
 ## Users (профиль)
 
@@ -31,9 +31,49 @@
 
 | Метод | Путь | Auth | Описание | Статус |
 |---|---|---|---|---|
-| PATCH | `/users/me` | Bearer | Обновить профиль (например, `display_name`) | запланирован |
-| POST | `/users/me/avatar/upload-url` | Bearer | Получить presigned URL для загрузки аватара | запланирован |
-| POST | `/users/me/avatar/complete` | Bearer | Подтвердить загрузку аватара и сохранить `avatar_s3_key` | запланирован |
+| PATCH | `/users/me` | Bearer | Обновить профиль (например, `display_name`) | реализован |
+| POST | `/users/me/avatar/upload-url` | Bearer | Получить presigned URL для загрузки аватара | реализован |
+| POST | `/users/me/avatar/complete` | Bearer | Подтвердить загрузку аватара и сохранить `avatar_s3_key` | реализован |
+
+### `PATCH /users/me`
+
+Пример запроса:
+
+```json
+{
+  "display_name": "Иван Михайлов"
+}
+```
+
+### `POST /users/me/avatar/upload-url`
+
+Пример запроса:
+
+```json
+{
+  "content_type": "image/jpeg"
+}
+```
+
+Пример ответа:
+
+```json
+{
+  "upload_url": "https://s3.example.com/...",
+  "s3_key": "avatars/a1b2c3d4.../avatar.jpg",
+  "expires_in": 900
+}
+```
+
+### `POST /users/me/avatar/complete`
+
+Пример запроса:
+
+```json
+{
+  "s3_key": "avatars/a1b2c3d4.../avatar.jpg"
+}
+```
 
 ## Events
 
@@ -44,8 +84,38 @@
 | GET | `/events/{event_id}` | Bearer | Получить событие по ID (только участник/организатор) | реализован |
 | PATCH | `/events/{event_id}` | Bearer | Обновить событие (организатор) | реализован |
 | DELETE | `/events/{event_id}` | Bearer | Soft delete события (организатор) | реализован |
-| POST | `/events/{event_id}/cover/upload-url` | Bearer | Получить presigned URL для обложки события | запланирован |
-| POST | `/events/{event_id}/cover/complete` | Bearer | Подтвердить загрузку обложки и сохранить `cover_s3_key` | запланирован |
+| POST | `/events/{event_id}/cover/upload-url` | Bearer (организатор) | Получить presigned URL для обложки события | реализован |
+| POST | `/events/{event_id}/cover/complete` | Bearer (организатор) | Подтвердить загрузку обложки и сохранить `cover_s3_key` | реализован |
+
+### `POST /events/{event_id}/cover/upload-url`
+
+Пример запроса:
+
+```json
+{
+  "content_type": "image/jpeg"
+}
+```
+
+Пример ответа:
+
+```json
+{
+  "upload_url": "https://s3.example.com/...",
+  "s3_key": "covers/a1b2c3d4.../cover.jpg",
+  "expires_in": 900
+}
+```
+
+### `POST /events/{event_id}/cover/complete`
+
+Пример запроса:
+
+```json
+{
+  "s3_key": "covers/a1b2c3d4.../cover.jpg"
+}
+```
 
 ## QR и участники
 
