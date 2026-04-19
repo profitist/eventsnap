@@ -18,7 +18,7 @@
 pip install -r requirements.txt
 
 # 2. Переменные окружения
-cp .env.example .env  # заполни значения
+cp .env .env  # заполни значения
 
 # 3. Миграции
 alembic upgrade head
@@ -35,8 +35,17 @@ uvicorn src.main:app --reload
 # База данных
 DB_USER=postgres
 DB_PASSWORD=yourpassword
-DB_HOST=localhost
+DB_HOST=127.0.0.1
+DB_PORT=5432
 DB_NAME=eventsnap
+DB_ECHO=false
+DB_POOL_SIZE=5
+DB_MAX_OVERFLOW=10
+DB_POOL_PRE_PING=true
+
+# Альтернатива: можно задать полный URL одной переменной.
+# Если DATABASE_URL задан, отдельные DB_* поля для подключения игнорируются.
+# DATABASE_URL=postgresql+asyncpg://postgres:yourpassword@127.0.0.1:5432/eventsnap
 
 # Безопасность
 SECRET_KEY=your-secret-key  # обязательно
@@ -53,6 +62,42 @@ S3_PRESIGN_DOWNLOAD_TTL=3600
 ```
 
 `SECRET_KEY`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BASE_URL` — обязательные поля. Приложение не запустится без них.
+
+Для подключения к PostgreSQL используется асинхронный драйвер `asyncpg`, поэтому URL базы должен быть `postgresql+asyncpg://...`. Если в `DATABASE_URL` указать обычный `postgresql://...`, приложение автоматически приведёт его к asyncpg-варианту.
+
+## Docker
+
+Для деплоя на VM можно использовать `docker-compose.yml`. Compose сам читает `.env`, поэтому переменные окружения не нужно передавать руками при каждом запуске.
+
+```bash
+# 1. Создать и заполнить окружение
+cp .env .env
+
+# 2. Если PostgreSQL установлен прямо на той же VM, оставь:
+# DB_HOST=host.docker.internal
+#
+# Если PostgreSQL находится на другой машине, укажи её IP или DNS:
+# DB_HOST=10.0.0.5
+
+# 3. Собрать образ
+docker compose build
+
+# 4. Применить миграции
+docker compose run --rm migrate
+
+# 5. Запустить API
+docker compose up -d api
+```
+
+Важно: внутри контейнера `127.0.0.1` — это сам контейнер, а не VM. Если PostgreSQL установлен на той же VM, `docker-compose.yml` добавляет `host.docker.internal`, но сам PostgreSQL должен слушать не только localhost и разрешать подключения с Docker bridge в `pg_hba.conf`.
+
+API будет доступен на порту `APP_PORT` из `.env` или на `8000` по умолчанию.
+
+Если таблицы уже были созданы вручную SQL-скриптом, вместо миграции отметь базу как актуальную:
+
+```bash
+docker compose run --rm migrate alembic stamp head
+```
 
 ## Структура проекта
 

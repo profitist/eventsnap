@@ -63,7 +63,16 @@ class User(Base):
     participations: Mapped[list["EventParticipant"]] = relationship(
         "EventParticipant", back_populates="user", cascade="all, delete-orphan"
     )
-    photos: Mapped[list["Photo"]] = relationship("Photo", back_populates="uploader")
+    photos: Mapped[list["Photo"]] = relationship(
+        "Photo",
+        foreign_keys="Photo.uploader_id",
+        back_populates="uploader",
+    )
+    moderated_photos: Mapped[list["Photo"]] = relationship(
+        "Photo",
+        foreign_keys="Photo.moderated_by_id",
+        back_populates="moderated_by",
+    )
 
 
 class UserPasswordCredential(Base):

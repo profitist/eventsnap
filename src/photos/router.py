@@ -23,10 +23,16 @@ router = APIRouter(tags=["photos"])
 
 
 def _to_photo_response(photo: Photo, s3: S3Client) -> PhotoResponse:
-    return PhotoResponse(
-        **PhotoResponse.model_validate(photo).model_dump(),
-        original_url=s3.build_public_url(photo.original_s3_key),
-        thumbnail_url=s3.build_public_url(photo.thumbnail_s3_key) if photo.thumbnail_s3_key else None,
+    response = PhotoResponse.model_validate(photo)
+    return response.model_copy(
+        update={
+            "original_url": s3.build_public_url(photo.original_s3_key),
+            "thumbnail_url": (
+                s3.build_public_url(photo.thumbnail_s3_key)
+                if photo.thumbnail_s3_key
+                else None
+            ),
+        }
     )
 
 

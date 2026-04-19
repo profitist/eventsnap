@@ -100,6 +100,9 @@ class Photo(Base):
     uploader: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[uploader_id], back_populates="photos"
     )
+    moderated_by: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[moderated_by_id], back_populates="moderated_photos"
+    )
 
     __table_args__ = (
         CheckConstraint("file_size_bytes > 0", name="ck_photos_file_size_positive"),
