@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers
 revision: str = "0001"
@@ -42,7 +43,13 @@ def upgrade() -> None:
         sa.Column("avatar_s3_key", sa.String(512), nullable=True),
         sa.Column(
             "role",
-            sa.Enum("admin", "organizer", "guest", name="user_role_enum", create_type=False),
+            postgresql.ENUM(
+                "admin",
+                "organizer",
+                "guest",
+                name="user_role_enum",
+                create_type=False,
+            ),
             nullable=False,
             server_default="guest",
         ),
@@ -108,7 +115,12 @@ def upgrade() -> None:
         ),
         sa.Column(
             "provider",
-            sa.Enum("google", "apple", name="oauth_provider_enum", create_type=False),
+            postgresql.ENUM(
+                "google",
+                "apple",
+                name="oauth_provider_enum",
+                create_type=False,
+            ),
             nullable=False,
         ),
         sa.Column("provider_user_id", sa.String(255), nullable=False),
@@ -149,7 +161,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "draft", "active", "finished", "archived",
                 name="event_status_enum",
                 create_type=False,
@@ -218,7 +230,12 @@ def upgrade() -> None:
         ),
         sa.Column(
             "role",
-            sa.Enum("organizer", "attendee", name="participant_role_enum", create_type=False),
+            postgresql.ENUM(
+                "organizer",
+                "attendee",
+                name="participant_role_enum",
+                create_type=False,
+            ),
             nullable=False,
             server_default="attendee",
         ),
@@ -303,7 +320,7 @@ def upgrade() -> None:
         sa.Column("height_px", sa.Integer(), nullable=True),
         sa.Column(
             "moderation_status",
-            sa.Enum(
+            postgresql.ENUM(
                 "pending", "approved", "rejected",
                 name="photo_moderation_status_enum",
                 create_type=False,

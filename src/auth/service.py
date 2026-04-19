@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.jwt import create_token_pair, decode_token
-from src.auth.passwords import hash_password, verify_password
+from src.auth.passwords import DUMMY_PASSWORD_HASH, hash_password, verify_password
 from src.auth.schemas import AuthResponse, RegisterRequest, TokenPair, UserResponse
 from src.repositories.user_repository import UserPasswordCredentialRepository, UserRepository
 
@@ -46,7 +46,7 @@ class AuthService:
         user = await self._users.get_by_email(email)
         if user is None:
             # Constant-time: run bcrypt even on missing user to prevent timing attacks
-            verify_password(password, "$2b$12$" + "x" * 53)
+            verify_password(password, DUMMY_PASSWORD_HASH)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",

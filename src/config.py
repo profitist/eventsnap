@@ -1,11 +1,18 @@
+from sqlalchemy.engine import URL, make_url
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Config(BaseSettings):
+    DATABASE_URL: str | None = None
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "postgres"
     DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
     DB_NAME: str = "eventsnap"
+    DB_ECHO: bool = False
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_PRE_PING: bool = True
     SECRET_KEY: str
 
     # S3 / object storage configuration
@@ -31,7 +38,32 @@ class Config(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     def get_database_url(self) -> str:
-        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}/{self.DB_NAME}"
+        if self.DATABASE_URL:
+            return self._normalize_database_url(self.DATABASE_URL)
+
+        url = URL.create(
+            "postgresql+asyncpg",
+            username=self.DB_USER,
+            password=self.DB_PASSWORD,
+            host=self.DB_HOST,
+            port=self.DB_PORT,
+            database=self.DB_NAME,
+        )
+        return url.render_as_string(hide_password=False)
+
+    def get_safe_database_url(self) -> str:
+        return make_url(self.get_database_url()).render_as_string(hide_password=True)
+
+    @staticmethod
+    def _normalize_database_url(database_url: str) -> str:
+        normalized = database_url.strip()
+        if normalized.startswith("postgres://"):
+            normalized = "postgresql://" + normalized.removeprefix("postgres://")
+
+        url = make_url(normalized)
+        if url.drivername == "postgresql" or url.drivername.startswith("postgresql+"):
+            url = url.set(drivername="postgresql+asyncpg")
+        return url.render_as_string(hide_password=False)
 
 
 config = Config()
