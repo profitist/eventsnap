@@ -120,3 +120,17 @@ class GalleryResponse(BaseModel):
 
 class GalleryUpdateRequest(BaseModel):
     moderation_enabled: bool | None = None
+
+
+class CoverUploadUrlRequest(BaseModel):
+    content_type: str = Field(min_length=3, max_length=100, pattern=r"^image/")
+
+
+class CoverUploadUrlResponse(BaseModel):
+    upload_url: str
+    s3_key: str
+    expires_in: int
+
+
+class CoverCompleteRequest(BaseModel):
+    s3_key: str = Field(min_length=1, max_length=512)

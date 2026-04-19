@@ -43,10 +43,14 @@ src/
 │   ├── passwords.py         # bcrypt hash/verify
 │   ├── jwt.py               # JWT encode/decode, пара access + refresh
 │   └── dependencies.py      # get_current_user (FastAPI Depends)
+├── users/                   # профиль пользователя
+│   ├── router.py            # PATCH /users/me, avatar upload-url/complete
+│   ├── schemas.py           # UserUpdate, Avatar request/response схемы
+│   └── service.py           # UserProfileService: update profile, avatar upload
 ├── events/                  # события
-│   ├── router.py            # /events CRUD + /events/join + participants + gallery
-│   ├── schemas.py           # Event/Gallery/Participants request/response схемы
-│   └── service.py           # EventService: CRUD, QR-join, participants, gallery
+│   ├── router.py            # /events CRUD + /events/join + participants + gallery + cover
+│   ├── schemas.py           # Event/Gallery/Cover/Participants request/response схемы
+│   └── service.py           # EventService: CRUD, QR-join, participants, gallery, cover
 ├── photos/                  # фото и модерация
 │   ├── router.py            # /events/{id}/photos..., /photos/{id}/approve|reject
 │   ├── schemas.py           # Photo request/response схемы
@@ -195,6 +199,25 @@ async def protected(user: User = Depends(get_current_user)):
 - Login защищён от timing attacks: bcrypt выполняется даже при отсутствии пользователя
 - Token blacklist / revocation отсутствует — для MVP достаточно TTL
 
+## Профиль пользователя
+
+Полный и актуальный список API-эндпоинтов см. в `docs/api.md`.
+
+### Эндпоинты
+
+| Метод | Путь | Описание | Auth |
+|---|---|---|---|
+| PATCH | `/users/me` | Обновить профиль (`display_name`) | Bearer |
+| POST | `/users/me/avatar/upload-url` | Presigned URL для загрузки аватара | Bearer |
+| POST | `/users/me/avatar/complete` | Подтвердить загрузку и сохранить `avatar_s3_key` | Bearer |
+
+### Бизнес-логика
+
+- `PATCH /users/me` принимает частичное обновление (только переданные поля)
+- Загрузка аватара — двухшаговый процесс: получить URL → загрузить в S3 → подтвердить
+- `complete` проверяет существование объекта в S3 через `head_object`
+- S3-ключ аватара: `avatars/{user_id_hex}/avatar.{ext}` — перезаписывается при повторной загрузке
+
 ## События, QR и галерея
 
 Полный и актуальный список API-эндпоинтов см. в `docs/api.md`.
@@ -213,6 +236,8 @@ async def protected(user: User = Depends(get_current_user)):
 | GET | `/events/{id}/participants` | Список участников события | Bearer (participant) |
 | GET | `/events/{id}/gallery` | Получить настройки галереи | Bearer (participant) |
 | PATCH | `/events/{id}/gallery` | Обновить `moderation_enabled` | Bearer (organizer) |
+| POST | `/events/{id}/cover/upload-url` | Presigned URL для обложки | Bearer (organizer) |
+| POST | `/events/{id}/cover/complete` | Подтвердить загрузку обложки | Bearer (organizer) |
 
 ### Бизнес-логика
 
@@ -222,6 +247,8 @@ async def protected(user: User = Depends(get_current_user)):
 - `POST /events/join` идемпотентен: повторный join не создаёт дубликаты
 - Update/delete доступны только организатору (`event.organizer_id == user.id`), иначе 403
 - Координаты и даты валидируются на уровне Pydantic (оба или ничего, `ends_at > starts_at`)
+- Загрузка обложки — двухшаговый процесс (аналогично аватару): presigned URL → upload → complete
+- `complete` проверяет наличие файла в S3 через `head_object`, затем сохраняет `cover_s3_key`
 
 ## Фото и модерация
 

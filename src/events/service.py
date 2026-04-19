@@ -4,11 +4,14 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.events.schemas import EventCreateRequest, EventUpdateRequest
+from src.config import config
+from src.events.schemas import CoverUploadUrlRequest, EventCreateRequest, EventUpdateRequest
 from src.models.event import Event, EventParticipant
 from src.models.gallery import Gallery
 from src.repositories.event_repository import EventParticipantRepository, EventRepository
 from src.repositories.gallery_repository import GalleryRepository
+from src.s3.client import S3Client, S3Error
+from src.s3.keys import event_cover_key
 
 
 class EventService:
@@ -201,6 +204,50 @@ class EventService:
         await self._session.commit()
         await self._session.refresh(gallery)
         return gallery
+
+    async def create_cover_upload_url(
+        self,
+        event_id: UUID,
+        user_id: UUID,
+        data: CoverUploadUrlRequest,
+        s3: S3Client,
+    ) -> tuple[str, str]:
+        event = await self._get_owned_event(event_id, user_id)
+        s3_key = event_cover_key(event.id, data.content_type)
+        try:
+            upload_url = await s3.generate_presigned_upload_url(
+                s3_key,
+                data.content_type,
+            )
+            return upload_url, s3_key
+        except S3Error as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(exc),
+            )
+
+    async def complete_cover_upload(
+        self,
+        event_id: UUID,
+        user_id: UUID,
+        s3_key: str,
+        s3: S3Client,
+    ) -> Event:
+        event = await self._get_owned_event(event_id, user_id)
+        if not await s3.object_exists(s3_key):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Object not found in S3. Upload the file first.",
+            )
+
+        event = await self._events.update(event, cover_s3_key=s3_key)
+        await self._session.commit()
+        await self._session.refresh(event)
+        return event
+
+    @staticmethod
+    def upload_ttl_seconds() -> int:
+        return config.S3_PRESIGN_UPLOAD_TTL
 
     async def _get_owned_event(self, event_id: UUID, user_id: UUID) -> Event:
         event = await self.get_or_404(event_id)

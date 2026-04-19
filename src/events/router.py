@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.dependencies import get_current_user
 from src.db.db_depends import get_async_session
 from src.events.schemas import (
+    CoverCompleteRequest,
+    CoverUploadUrlRequest,
+    CoverUploadUrlResponse,
     EventCreateRequest,
     EventJoinLinkResponse,
     EventJoinRequest,
@@ -20,6 +23,7 @@ from src.events.schemas import (
 )
 from src.events.service import EventService
 from src.models.user import User
+from src.s3.client import S3Client, get_s3_client
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -98,6 +102,43 @@ async def delete_event(
 ) -> None:
     service = EventService(session)
     await service.soft_delete(event_id, user.id)
+
+
+@router.post(
+    "/{event_id}/cover/upload-url",
+    response_model=CoverUploadUrlResponse,
+)
+async def create_cover_upload_url(
+    event_id: UUID,
+    body: CoverUploadUrlRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+    s3: S3Client = Depends(get_s3_client),
+) -> CoverUploadUrlResponse:
+    service = EventService(session)
+    upload_url, s3_key = await service.create_cover_upload_url(
+        event_id, user.id, body, s3,
+    )
+    return CoverUploadUrlResponse(
+        upload_url=upload_url,
+        s3_key=s3_key,
+        expires_in=service.upload_ttl_seconds(),
+    )
+
+
+@router.post("/{event_id}/cover/complete", response_model=EventResponse)
+async def complete_cover_upload(
+    event_id: UUID,
+    body: CoverCompleteRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+    s3: S3Client = Depends(get_s3_client),
+) -> EventResponse:
+    service = EventService(session)
+    event = await service.complete_cover_upload(
+        event_id, user.id, body.s3_key, s3,
+    )
+    return EventResponse.model_validate(event)
 
 
 @router.get("/{event_id}/join-link", response_model=EventJoinLinkResponse)
