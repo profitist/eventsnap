@@ -7,8 +7,7 @@ __pycache__
 *.py[cod]
 *.log
 .env
-.env
-!.env
+.env.*
 htmlcov
 .pytest_cache
 .mypy_cache
