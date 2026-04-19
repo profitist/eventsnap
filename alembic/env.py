@@ -9,22 +9,20 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 # ---------------------------------------------------------------------------
 # Alembic Config object — gives access to values in alembic.ini
 # ---------------------------------------------------------------------------
-config = context.config
+alembic_config = context.config
 
 # Interpret the config file for Python logging.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+if alembic_config.config_file_name is not None:
+    fileConfig(alembic_config.config_file_name)
 
 # ---------------------------------------------------------------------------
 # Import project config and all models so metadata is fully populated
 # ---------------------------------------------------------------------------
-from src.config import Config  # noqa: E402
+from src.config import config as app_config  # noqa: E402
 from src.models import Base  # noqa: E402  — imports all models via __init__.py
 
-# Override the sqlalchemy.url with the value from our Config class,
-# replacing +asyncpg with +asyncpg (alembic uses the async driver too via
-# async_engine_from_config below).
-config.set_main_option("sqlalchemy.url", Config.get_database_url())
+# Alembic uses the same asyncpg URL as the application.
+alembic_config.set_main_option("sqlalchemy.url", app_config.get_database_url())
 
 target_metadata = Base.metadata
 
@@ -33,7 +31,7 @@ target_metadata = Base.metadata
 # Offline migrations — generate SQL without a live DB connection
 # ---------------------------------------------------------------------------
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
+    url = alembic_config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -60,7 +58,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        alembic_config.get_section(alembic_config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
