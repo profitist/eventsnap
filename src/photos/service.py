@@ -92,6 +92,39 @@ class PhotoService:
         await self._photos.soft_delete(photo)
         await self._session.commit()
 
+    async def complete_upload(
+        self,
+        photo_id: UUID,
+        user_id: UUID,
+        s3_key: str,
+        s3: S3Client,
+    ) -> Photo:
+        photo, _, event = await self._get_photo_with_context(photo_id)
+        if photo.uploader_id != user_id and event.organizer_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only uploader or organizer can complete this upload",
+            )
+        if s3_key != photo.original_s3_key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="S3 key does not match this photo",
+            )
+
+        try:
+            exists = await s3.object_exists(s3_key)
+        except S3Error as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(exc),
+            )
+        if not exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Object not found in S3. Upload the file first.",
+            )
+        return photo
+
     async def list_pending_for_event(
         self,
         event_id: UUID,

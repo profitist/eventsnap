@@ -23,6 +23,8 @@ class PhotoUploadUrlRequest(BaseModel):
 class PhotoUploadUrlResponse(BaseModel):
     photo_id: UUID
     upload_url: str
+    upload_method: str = "PUT"
+    upload_headers: dict[str, str]
     s3_key: str
     expires_in: int
     moderation_status: str
@@ -59,6 +61,10 @@ class PhotoListResponse(BaseModel):
 
 class PendingCountResponse(BaseModel):
     total: int
+
+
+class PhotoCompleteRequest(BaseModel):
+    s3_key: str = Field(min_length=1, max_length=512)
 
 
 class PhotoApproveRequest(BaseModel):

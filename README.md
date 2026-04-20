@@ -129,9 +129,10 @@ src/
 ## Флоу загрузки фото
 
 1. Клиент запрашивает presigned URL: `POST /events/{event_id}/photos/upload-url`
-2. API возвращает URL и сохраняет запись `Photo` со статусом `pending`
+2. API возвращает `upload_url`, `upload_method`, `upload_headers`, `s3_key`, `photo_id` и сохраняет запись `Photo`
 3. Клиент загружает файл **напрямую на S3** (через API-сервер не проходит)
-4. Фоновый воркер генерирует thumbnail и обновляет запись
+4. Клиент подтверждает загрузку: `POST /photos/{photo_id}/complete`
+5. Фоновый воркер генерирует thumbnail и обновляет запись
 
 ## Документация
 

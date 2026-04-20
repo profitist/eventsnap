@@ -150,6 +150,7 @@
 | Метод | Путь | Auth | Описание | Статус |
 |---|---|---|---|---|
 | POST | `/events/{event_id}/photos/upload-url` | Bearer (участник/организатор) | Создать `Photo`, вернуть presigned URL для прямой загрузки в S3 | реализован |
+| POST | `/photos/{photo_id}/complete` | Bearer | Подтвердить, что объект появился в S3 | реализован |
 | GET | `/events/{event_id}/photos` | Bearer (участник/организатор) | Лента одобренных фото галереи | реализован |
 | DELETE | `/photos/{photo_id}` | Bearer | Удалить фото (автор фото или организатор) | реализован |
 
@@ -171,8 +172,25 @@
 {
   "photo_id": "0ecfdb90-4126-42c5-a61d-7bcc8e7eb7f2",
   "upload_url": "https://s3.example.com/...",
+  "upload_method": "PUT",
+  "upload_headers": {
+    "Content-Type": "image/jpeg"
+  },
   "s3_key": "photos/<event>/<photo>/original.jpg",
-  "expires_in": 900
+  "expires_in": 900,
+  "moderation_status": "pending"
+}
+```
+
+После прямого `PUT` в S3:
+
+```http
+POST /photos/{photo_id}/complete
+```
+
+```json
+{
+  "s3_key": "photos/<event>/<photo>/original.jpg"
 }
 ```
 

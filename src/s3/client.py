@@ -19,6 +19,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 import aioboto3
+from botocore.config import Config as BotoConfig
 from botocore.exceptions import BotoCoreError, ClientError
 
 from src.config import config
@@ -63,6 +64,7 @@ class S3Client:
         self._base_url = base_url.rstrip("/")
         self._presign_upload_ttl = presign_upload_ttl
         self._presign_download_ttl = presign_download_ttl
+        self._client_config = BotoConfig(signature_version="s3v4")
 
         self._session = aioboto3.Session(
             aws_access_key_id=access_key_id,
@@ -83,6 +85,7 @@ class S3Client:
         async with self._session.client(
             "s3",
             endpoint_url=self._endpoint_url,
+            config=self._client_config,
         ) as client:
             yield client
 
@@ -90,7 +93,6 @@ class S3Client:
         """Convert a boto exception into a domain S3Error and log it."""
         logger.error("S3 %s failed for key=%r: %s", operation, key, exc)
         return S3Error(f"S3 {operation} failed for key {key!r}: {exc}")
-
 
     # ------------------------------------------------------------------
     # URL helpers (no I/O)
@@ -276,7 +278,14 @@ class S3Client:
                 await client.head_object(Bucket=self._bucket, Key=key)
             return True
         except ClientError as exc:
-            if exc.response["Error"]["Code"] in ("404", "NoSuchKey"):
+            error = exc.response.get("Error", {})
+            status_code = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+            if status_code == 404 or error.get("Code") in {
+                "404",
+                "NoSuchKey",
+                "NotFound",
+                "Not Found",
+            }:
                 return False
             raise self._wrap(exc, "object_exists", key)
         except BotoCoreError as exc:

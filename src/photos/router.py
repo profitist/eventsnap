@@ -10,6 +10,7 @@ from src.models.user import User
 from src.photos.schemas import (
     PendingCountResponse,
     PhotoApproveRequest,
+    PhotoCompleteRequest,
     PhotoListResponse,
     PhotoRejectRequest,
     PhotoResponse,
@@ -53,6 +54,7 @@ async def create_photo_upload_url(
     return PhotoUploadUrlResponse(
         photo_id=photo.id,
         upload_url=upload_url,
+        upload_headers={"Content-Type": body.content_type},
         s3_key=photo.original_s3_key,
         expires_in=service.upload_ttl_seconds(),
         moderation_status=photo.moderation_status,
@@ -122,6 +124,19 @@ async def delete_photo(
 ) -> None:
     service = PhotoService(session)
     await service.delete_photo(photo_id, user.id)
+
+
+@router.post("/photos/{photo_id}/complete", response_model=PhotoResponse)
+async def complete_photo_upload(
+    photo_id: UUID,
+    body: PhotoCompleteRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+    s3: S3Client = Depends(get_s3_client),
+) -> PhotoResponse:
+    service = PhotoService(session)
+    photo = await service.complete_upload(photo_id, user.id, body.s3_key, s3)
+    return _to_photo_response(photo, s3)
 
 
 @router.post("/photos/{photo_id}/approve", response_model=PhotoResponse)

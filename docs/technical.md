@@ -145,8 +145,9 @@ UUID-ы хранятся в ключах без дефисов (hex), расши
    - `pending`, если `gallery.moderation_enabled=true`
    - `approved`, если `gallery.moderation_enabled=false`
    и возвращает URL клиенту.
-4. Клиент делает `PUT` напрямую на S3 (данные не проходят через API-сервер).
-5. Фоновый воркер генерирует thumbnail и обновляет `Photo.thumbnail_s3_key`
+4. Клиент делает `PUT` напрямую на S3 (данные не проходят через API-сервер), используя метод и заголовки из ответа API.
+5. Клиент вызывает `POST /photos/{photo_id}/complete`, API проверяет объект через `head_object`.
+6. Фоновый воркер генерирует thumbnail и обновляет `Photo.thumbnail_s3_key`
    через `PhotoRepository.set_thumbnail_key(...)`.
 
 Thumbnail (~400px) генерируется фоновым воркером после загрузки.
@@ -259,6 +260,7 @@ async def protected(user: User = Depends(get_current_user)):
 | Метод | Путь | Описание | Auth |
 |---|---|---|---|
 | POST | `/events/{id}/photos/upload-url` | Создать `Photo`, выдать presigned upload URL | Bearer (participant) |
+| POST | `/photos/{id}/complete` | Проверить, что файл загружен в S3 | Bearer |
 | GET | `/events/{id}/photos` | Лента одобренных фото | Bearer (participant) |
 | DELETE | `/photos/{id}` | Soft delete фото (uploader или organizer) | Bearer |
 | GET | `/events/{id}/photos/pending` | Очередь модерации | Bearer (organizer) |
