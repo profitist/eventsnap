@@ -1,11 +1,11 @@
 services:
   api:
     build: .
-    image: eventsnap-api:latest
+    image: ${IMAGE_NAME:-eventsnap-api}:${IMAGE_TAG:-latest}
     env_file:
       - .env
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "127.0.0.1:8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -24,7 +24,7 @@ services:
 
   migrate:
     build: .
-    image: eventsnap-api:latest
+    image: ${IMAGE_NAME:-eventsnap-api}:${IMAGE_TAG:-latest}
     env_file:
       - .env
     extra_hosts:
