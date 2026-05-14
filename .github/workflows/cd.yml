@@ -69,11 +69,13 @@ jobs:
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
-          sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose pull api
+          sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull api
+          
+          sudo docker rm -f $(docker ps -aq)
 
           sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose up -d 
 
-          sudo docker-compose ps
+          sudo docker compose ps
 
           curl -fsS http://127.0.0.1:8000/ > /dev/null
 
