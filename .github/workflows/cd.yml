@@ -71,8 +71,6 @@ jobs:
 
           sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose pull api
 
-          sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose --profile migrate run --rm migrate
-
           sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose up -d --no-build api
 
           sudo docker-compose ps
