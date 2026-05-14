@@ -64,18 +64,18 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "IMAGE_NAME='${{ env.IMAGE_NAME }}' IMAGE_TAG='${{ github.sha }}' GHCR_USERNAME='${{ secrets.GHCR_USERNAME }}' GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}' SERVER_APP_DIR='${{ secrets.SERVER_APP_DIR }}' bash -s" << 'EOF'
           set -euo pipefail
-
+          
           cd "$SERVER_APP_DIR"
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
-          IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull api
+          IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose pull api
 
-          IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose --profile migrate run --rm migrate
+          IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose --profile migrate run --rm migrate
 
-          IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --no-build api
+          IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose up -d --no-build api
 
-          docker compose ps
+          docker-compose ps
 
           curl -fsS http://127.0.0.1:8000/ > /dev/null
 
