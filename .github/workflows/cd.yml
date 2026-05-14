@@ -75,7 +75,7 @@ jobs:
 
           sudo IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker-compose up -d 
 
-          sudo docker compose ps
+          sudo docker-compose ps
 
           curl -fsS http://127.0.0.1:8000/ > /dev/null
 
